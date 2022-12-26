@@ -1,1 +1,2 @@
 # Longformer_SentimentAnalysis
+关于Longformer预训练模型的游记文本情感分类
