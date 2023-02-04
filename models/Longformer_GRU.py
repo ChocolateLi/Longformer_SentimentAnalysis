@@ -19,7 +19,7 @@ class NeuralNetwork(nn.Module):
         # 这个可以拿到预训练模型最后一层的结果
         self.longformer = AutoModel.from_pretrained(model)
         # 接一个GRU
-        self.gru = nn.GRU(input_size=768, hidden_size=512, batch_first=True, dropout=0.5)
+        self.gru = nn.GRU(input_size=768, hidden_size=512, batch_first=True)
         # 这里可以接分类层，输入768维，最后分为2个类别
         # 这里可以添加其他网络模型，提升效果
         # 加多一个线性层

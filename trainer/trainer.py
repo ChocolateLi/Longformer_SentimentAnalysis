@@ -20,11 +20,18 @@ import time
 # epoch ：训练的轮次
 # total_loss ：整体loss的情况
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 def train_loop(dataloader, model, loss_fn, optimizer, lr_scheduler, epoch, total_loss):
+    start_time = time.time()
     progress_bar = tqdm(range(len(dataloader)))
     progress_bar.set_description(f'loss: {0:>7f}')
     finish_batch_num = (epoch - 1) * len(dataloader)
+
+    # 获取训练集文本数据量
+    size = len(dataloader.dataset)
+    # 统计预测正确的个数
+    correct = 0
 
     model.train()
     for batch, data in enumerate(dataloader, start=1):
@@ -35,6 +42,9 @@ def train_loop(dataloader, model, loss_fn, optimizer, lr_scheduler, epoch, total
         pred = model(input_ids, token_type_ids, attention_mask)
         loss = loss_fn(pred, labels)
 
+        # 统计准确率
+        correct += (pred.argmax(1) == labels).type(torch.float).sum().item()
+
         loss.backward()  # 向后传播
         optimizer.step()  # 算完梯度下降之后更改参数
         lr_scheduler.step()  # 对学习率进行调整
@@ -43,7 +53,12 @@ def train_loop(dataloader, model, loss_fn, optimizer, lr_scheduler, epoch, total
         total_loss += loss.item()  # 统计一下整体的loss
         progress_bar.set_description(f'loss: {total_loss / (finish_batch_num + batch):>7f}')
         progress_bar.update(1)
-    return total_loss,total_loss/batch
+
+    # 统计训练一轮花费的时间
+    spend_time = time.time() - start_time
+    correct /= size
+    # total_loss/(finish_batch_num + batch) 统计每一轮的损失率
+    return total_loss,total_loss/(finish_batch_num + batch),spend_time,correct
 
 criterion = nn.CrossEntropyLoss() # 损失函数，交叉熵
 def test_loop(dataloader, model, mode='Test'):

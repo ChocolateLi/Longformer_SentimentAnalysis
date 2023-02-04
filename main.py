@@ -6,22 +6,24 @@
 # @File    : main.py
 # @Software: PyCharm
 
-import os
-import sys
+
 import yaml
 import torch
-import argparse
 import pandas as pd
-import dataset.my_dataset
+import dataset.my_dataset,dataset.shorttext_dataset
 import models.Longformer_BiGRU
 from trainer import trainer
-from utils import metrics
-from dataset import *
-from torch.utils.data import DataLoader
 from transformers import AdamW, get_scheduler
 from torch import nn
-from datasets import load_dataset
-from models import Longformer,Longformer_BiGRU,Longformer_GRU,Longformer_BiLSTM,Longformer_LSTM,Longformer_RNN
+from models import BERT_ShortText,Longformer_ShortText,Longformer,Longformer_BiGRU,Longformer_GRU,Longformer_BiLSTM,Longformer_LSTM,Longformer_RNN
+
+"""
+修改四处：
+1.device (main.py，trainer.py)
+2.model
+3.csv
+4.模型保存位置
+"""
 
 # 加载配置文件函数
 def load_config(file_path):
@@ -45,13 +47,28 @@ def main():
     # trainer
 
     # 1.加载数据
+    # 这里加载的是自己的数据集
+
     dataloaders = dataset.my_dataset.dataloader_dict()
     train_dataloader = dataloaders['train']
     valid_dataloader = dataloaders['valid']
     test_dataloader = dataloaders['test']
 
+
+    # 这里加载短文本数据集
+    """
+    dataloaders = dataset.shorttext_dataset.dataloader_dict1()
+    train_dataloader = dataloaders['train']
+    valid_dataloader = dataloaders['valid']
+    test_dataloader = dataloaders['test']
+    """
+
+
     # 2.加载模型
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    # model = models.BERT_ShortText.NeuralNetwork().to(device)
+    # model = models.Longformer_ShortText.NeuralNetwork().to(device)
     model = models.Longformer.NeuralNetwork().to(device)
     # model = models.Longformer_BiGRU.NeuralNetwork().to(device)
     # model = models.Longformer_GRU.NeuralNetwork().to(device)
@@ -74,6 +91,8 @@ def main():
 
     # 5.开始训练并记录实验数据
     # df = pd.DataFrame(columns=['epoch','total_loss','mean_loss','test_loss','valid_acc','spend_time'])
+    # csv_file_path = "./output/BERT_ShortText.csv"
+    # csv_file_path = "./output/Longformer_ShortText.csv"
     csv_file_path = "./output/Longformer.csv"
     # csv_file_path = "./output/Longformer_BiGRU.csv"
     # csv_file_path = "./output/Longformer_GRU.csv"
@@ -84,17 +103,17 @@ def main():
     best_acc = 0.
     for t in range(epoch_num):
         print(f"Epoch {t + 1}/{epoch_num}\n-------------------------------")
-        total_loss,mean_loss = trainer.train_loop(train_dataloader, model, loss_fn, optimizer, lr_scheduler, t + 1, total_loss)
-        test_loss,valid_acc,spend_time = trainer.test_loop(valid_dataloader, model, mode='Valid')
-        list = [total_loss,mean_loss,test_loss,valid_acc,spend_time]
+        total_loss,mean_loss,train_time,train_correct = trainer.train_loop(train_dataloader, model, loss_fn, optimizer, lr_scheduler, t + 1, total_loss)
+        valid_loss,valid_acc,valid_time = trainer.test_loop(valid_dataloader, model, mode='Valid')
+        list = [total_loss,mean_loss,train_time,train_correct,valid_loss,valid_acc,valid_time]
         data = pd.DataFrame([list])
         data.to_csv(csv_file_path,mode='a',header=False,index=False)
         if valid_acc > best_acc:
             best_acc = valid_acc
             print('saving new weights...\n')
             # 保存模型
-            torch.save(model.state_dict(), f'./output/epoch_{t + 1}_valid_acc_{(100 * valid_acc):0.1f}_model_weights.bin')
-            # torch.save(model.state_dict(), f'./output1/epoch_{t + 1}_valid_acc_{(100 * valid_acc):0.1f}_model_weights.bin')
+            # torch.save(model.state_dict(), f'./output/epoch_{t + 1}_valid_acc_{(100 * valid_acc):0.1f}_model_weights.bin')
+            torch.save(model.state_dict(), f'./output1/epoch_{t + 1}_valid_acc_{(100 * valid_acc):0.1f}_model_weights.bin')
     print("Done!")
 
 """

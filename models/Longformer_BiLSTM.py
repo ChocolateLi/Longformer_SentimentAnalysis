@@ -19,16 +19,21 @@ class NeuralNetwork(nn.Module):
         # 这个可以拿到预训练模型最后一层的结果
         self.longformer = AutoModel.from_pretrained(model)
         # 接一个BiGRU
-        self.lstm = nn.LSTM(input_size=768,hidden_size=512,batch_first=True,bidirectional=True,dropout=0.5)
+        self.lstm = nn.LSTM(input_size=768,hidden_size=512,batch_first=True,bidirectional=True)
         # 这里可以接分类层，输入768维，最后分为2个类别
         # 这里可以添加其他网络模型，提升效果
         # 加多一个线性层
         self.linear = self.linear = nn.Sequential(
-            nn.Linear(1024,512),
+            nn.Linear(1024, 512),
             torch.nn.Dropout(0.5),
             torch.nn.ReLU(),
-            nn.Linear(512,2)
+            nn.Linear(512, 2)
         )
+        # self.linear = self.linear = nn.Sequential(
+        #     nn.Linear(1536,512),
+        #     torch.nn.ReLU(),
+        #     nn.Linear(512,2)
+        # )
 
     def forward(self,input_ids,token_type_ids,attention_mask):
         # 取最后一层的第一个，因为我们希望拿到的是整句话的一个语义

@@ -19,10 +19,10 @@ class NeuralNetwork(nn.Module):
         # 这个可以拿到预训练模型最后一层的结果
         self.longformer = AutoModel.from_pretrained(model)
         self.linear = nn.Sequential(
-            nn.Linear(768,1024),
+            nn.Linear(768,512),
             torch.nn.Dropout(0.5),
             torch.nn.ReLU(),
-            nn.Linear(1024,2)
+            nn.Linear(512,2)
         )
 
     def forward(self,input_ids,token_type_ids,attention_mask):
